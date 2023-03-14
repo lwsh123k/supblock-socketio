@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ecc-socketio</title>
+</head>
+<body>
+  <input type="text" id="username" placeholder="请输入用户名">
+  <button onclick="joinRoom()">加入房间</button>
+  <br>
+  <input type="text" id="to" placeholder="请输入接收者">
+  <input type="text" id="message" placeholder="请输入消息">
+  <button onclick="sendPrivateMessage()">发送私聊消息</button>
+  <ul id="messages"></ul>
+
+
+  <script src="./socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    // 监听加入房间
+    socket.on('join', function(username) {
+    console.log('用户 ' + username + ' 加入了房间');
+    addMessage(username + ' 加入了房间');
+    });
+
+    // 监听离开房间事件
+    socket.on('leave', function(username) {
+    console.log('用户 ' + username + ' 离开了房间');
+    addMessage(username + ' 离开了房间');
+    });
+
+    // 监听私聊消息事件
+    socket.on('private message', function(data) {
+    console.log('用户 ' + data.from + ' 发送了私聊消息给 ' + data.to + ': ' + data.message);
+    addMessage(data.from + ' 发送了私聊消息给 ' + data.to + ': ' + data.message);
+    });
+
+    // 加入房间
+    function joinRoom() {
+    const username = document.getElementById('username').value;
+    if (username) {
+        socket.emit('join', { username: username });
+    }
+    }
+
+    // 发送私聊消息
+    function sendPrivateMessage() {
+    const to = document.getElementById('to').value;
+    const message = document.getElementById('message').value;
+    if (to && message) {
+        socket.emit('private message', { from: socket.id, to: to, message: message });
+        addMessage('你发送了私聊消息给 ' + to + ': ' + message);
+    }
+    }
+
+    // 添加消息到聊天记录
+    function addMessage(message) {
+        const ul = document.getElementById('messages');
+        const li = document.createElement('li');
+        li.appendChild(document.createTextNode(message));
+        ul.appendChild(li);
+    }
+</script>
+</body>
+</html>
