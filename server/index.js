@@ -4,7 +4,11 @@ const { Server } = require("socket.io");
 const cors = require('cors');
 const app = express();
 const httpServer = createServer(app);
-const io = new Server(httpServer, {});
+const io = new Server(httpServer, {
+   cors: {
+      origin: "http://127.0.0.1:5500", // 允许跨域访问的源
+    }
+});
 
 
 
@@ -23,6 +27,6 @@ io.on('connection', function(socket) {
    });
 });
 
-httpServer.listen(5500, "127.0.0.1", () => {
+httpServer.listen(3000, "127.0.0.1", () => {
    console.log('服务已启动');
 });
