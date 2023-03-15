@@ -1,16 +1,24 @@
-const app = require('express')();
-const http = require('http').Server(app);
-const io = require('socket.io')(http);
+const express = require("express");
+const { createServer } = require("http");
+const { Server } = require("socket.io");
+const cors = require('cors');
+const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+   cors: {
+      origin: "http://127.0.0.1:5500", // 允许跨域访问的源
+    }
+});
 
 // 存储在线用户的Socket对象
 const onlineUsers = {};
 
 // 监听连接事件
 io.on('connection', function(socket) {
-  console.log('有用户连接: ' + socket.id);
+    console.log('有用户连接: ' + socket.id);
 
-  // 监听加入房间事件
-  socket.on('join', function(data) {
+    // 监听加入房间事件
+    socket.on('join', function(data) {
     console.log('用户 ' + data.username + ' 加入了房间');
     // 存储在线用户
     onlineUsers[data.username] = socket;
@@ -44,6 +52,6 @@ io.on('connection', function(socket) {
 });
 
 // 启动服务器
-http.listen(8080, function() {
-  console.log('服务器正在监听8080端口');
+httpServer.listen(3000, function() {
+  console.log('服务器已启动');
 });
