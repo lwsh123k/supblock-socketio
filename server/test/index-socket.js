@@ -15,45 +15,25 @@ const onlineUsers = {};
 
 // 监听连接事件
 io.on('connection', function(socket) {
+    console.log('有用户连接: ' + socket.id);
 
-  console.log('有用户连接: ' + socket.id);
-
-  // 监听加入房间事件
-  socket.on('join', function(data) {
+    // 监听加入房间事件
+    socket.on('join', function(data) {
     console.log('用户 ' + data.username + ' 加入了房间');
-    // 存储在线用户,并广播消息
+    // 存储在线用户
     onlineUsers[data.username] = socket;
+    // 广播消息，通知所有用户
     io.emit('join', data.username);
   });
 
-  // 监听请求公钥事件(转发消息)
-  socket.on('request public key', function(data) {
-    console.log('用户 ' + data.from + ' 向 ' + data.to + '请求了公钥');
-    // 获取接收者的Socket对象,并转发消息
-    const toSocket = onlineUsers[data.to];
-    if (toSocket) {
-      toSocket.emit('request public key', data);
-    }
-  });
-
-  // 监听响应公钥事件(转发消息)
-  socket.on('response public key', function(data) {
-    console.log('用户 ' + data.from + ' 发送了公钥给 ' + data.to);
-    // 获取接收者的Socket对象,并转发消息
-    const toSocket = onlineUsers[data.to];
-    if (toSocket) {
-      toSocket.emit('response public key', data);
-    }
-  });
-
-  // 监听获取签名事件
-  socket.on('get sig', function(data) {
+  // 监听私聊事件
+  socket.on('private message', function(data) {
     console.log('用户 ' + data.from + ' 发送了私聊消息给 ' + data.to + ': ' + data.message);
     // 获取接收者的Socket对象
     const toSocket = onlineUsers[data.to];
     // 将消息发送给接收者
     if (toSocket) {
-      toSocket.emit('get sig', data);
+      toSocket.emit('private message', data);
     }
   });
 
@@ -69,7 +49,6 @@ io.on('connection', function(socket) {
       }
     });
   });
-
 });
 
 // 启动服务器

@@ -8,52 +8,87 @@
 </head>
 <body>
     <input type="text" id="username" placeholder="请输入用户名">
-    <button onclick="joinRoom()">加入房间</button>
+    <button onclick="joinRoom()">加入</button>
     <br>
-    <input type="text" id="to" placeholder="请输入接收者">
-    <input type="text" id="message" placeholder="请输入消息">
-    <button onclick="sendPrivateMessage()">发送私聊消息</button>
-    <ul id="messages"></ul>
 
+    <input type="text" id="to" placeholder="请输入签名者">
+    <button onclick="getPublicKey()">获得公钥</button>
+    <br>
+
+    <input type="text" id="message" placeholder="请输入消息">
+    <button onclick="getSig()">获得签名(盲化信息、签名、去盲)</button>
+    <ul id="messages"></ul>
+    <br>
+
+    <input type="text" id="c" placeholder="c">
+    <input type="text" id="s" placeholder="s">
+    <input type="text" id="t" placeholder="text">
+    <button onclick="verifySig()">验证签名</button>
 
     <script src="./socket.io.js"></script>
     <script>
         const socket = io("http://localhost:3000");
 
-        // 监听加入房间
+        // 监听其他用户加入
         socket.on('join', function(username) {
-        console.log('用户 ' + username + ' 加入了房间');
-        addMessage(username + ' 加入了房间');
+            console.log('用户 ' + username + ' 加入了房间');
+            addMessage(username + ' 加入了房间');
         });
 
-        // 监听离开房间事件
-        socket.on('leave', function(username) {
-        console.log('用户 ' + username + ' 离开了房间');
-        addMessage(username + ' 离开了房间');
+        //请求别人，获取公钥
+        function getPublicKey() {
+            let from = document.getElementById('username').value;
+            let to = document.getElementById('to').value;
+            socket.emit('request public key', { from: from, to: to});
+            addMessage('你向用户 ' + to + ' 请求了公钥');
+        }
+
+        //别人请求自己
+        socket.on('request public key', function(data) {
+            socket.emit('response public key', {from: data.to, to:data.from, a:'aa'})
         });
 
-        // 监听私聊消息事件
-        socket.on('private message', function(data) {
-        console.log('用户 ' + data.from + ' 发送了私聊消息给 ' + data.to + ': ' + data.message);
-        addMessage(data.from + ' 发送了私聊消息给 ' + data.to + ': ' + data.message);
+        //收到别人发给自己的公钥
+        socket.on('response public key', function(data) {
+            addMessage('收到来自 ' + data.from + ' 的公钥' + data.a);
+        });
+
+
+
+
+
+        // 请求签名
+        function getSig() {
+
+        }
+        // 监听 得到签名 事件
+        socket.on('get sig', function(data) {
+            console.log('用户 ' + data.from + ' 发送了私聊消息给 ' + data.to + ': ' + data.message);
+            addMessage(data.from + ' 发送了私聊消息给 ' + data.to + ': ' + data.message);
+        });
+
+        // 监听 对方不在线 事件
+        socket.on('not online', function(data) {
+            console.log('用户 ' + data.from + ' 发送了私聊消息给 ' + data.to + ': ' + data.message);
+            addMessage('请求方暂时不在线');
         });
 
         // 加入房间
         function joinRoom() {
-        const username = document.getElementById('username').value;
-        if (username) {
-            socket.emit('join', { username: username });
-        }
+            const username = document.getElementById('username').value;
+            if (username) {
+                socket.emit('join', { username: username });
+            }
         }
 
         // 发送私聊消息
         function sendPrivateMessage() {
-        const to = document.getElementById('to').value;
-        const message = document.getElementById('message').value;
-        if (to && message) {
-            socket.emit('private message', { from: socket.id, to: to, message: message });
-            addMessage('你发送了私聊消息给 ' + to + ': ' + message);
-        }
+            const to = document.getElementById('to').value;
+            const message = document.getElementById('message').value;
+            if (to && message) {
+                socket.emit('private message', { from: socket.id, to: to, message: message });
+                addMessage('你发送了私聊消息给 ' + to + ': ' + message);
+            }
         }
 
         // 添加消息到聊天记录
