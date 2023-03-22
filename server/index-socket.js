@@ -39,21 +39,27 @@ io.on('connection', function(socket) {
   // 监听响应公钥事件(转发消息)
   socket.on('response public key', function(data) {
     console.log('用户 ' + data.from + ' 发送了公钥给 ' + data.to);
-    // 获取接收者的Socket对象,并转发消息
     const toSocket = onlineUsers[data.to];
     if (toSocket) {
       toSocket.emit('response public key', data);
     }
   });
 
-  // 监听获取签名事件
-  socket.on('get sig', function(data) {
-    console.log('用户 ' + data.from + ' 发送了私聊消息给 ' + data.to + ': ' + data.message);
-    // 获取接收者的Socket对象
+  // 监听请求签名事件(转发消息)
+  socket.on('request sig', function(data) {
+    console.log('用户 ' + data.from + ' 向 ' + data.to + '请求了签名');
     const toSocket = onlineUsers[data.to];
-    // 将消息发送给接收者
     if (toSocket) {
-      toSocket.emit('get sig', data);
+      toSocket.emit('request sig', data);
+    }
+  });
+
+  // 监听响应签名事件(转发消息)
+  socket.on('response sig', function(data) {
+    console.log('用户 ' + data.from + ' 发送了签名给 ' + data.to);
+    const toSocket = onlineUsers[data.to];
+    if (toSocket) {
+      toSocket.emit('response sig', data);
     }
   });
 

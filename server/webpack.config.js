@@ -3,7 +3,7 @@ const NodePolyfillPlugin = require('node-polyfill-webpack-plugin');
 const { LibManifestPlugin } = require('webpack');
 
 
-// npx webpack build ./eccBlindSeparateFront.js
+// npx webpack build ./eccBlind.js
 module.exports = {
     mode: 'development',
     output:{

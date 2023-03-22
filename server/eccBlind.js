@@ -20,6 +20,8 @@ function keccak256(inp){
 let ecparams = ecurve.getCurveByName('secp256k1');
 let G = ecparams.G;
 let n = ecparams.n;
+let privateKey = Buffer.from("1184cd2cdd640ca42cfc3a091c51d549b2f016d454b2774019c2b2d2e08529fd", 'hex');
+let P_self = G.multiply(BigInteger.fromBuffer(privateKey));
 
 //前端解构收到的公钥，本地操作
 let R, P;
@@ -51,21 +53,21 @@ function generateRandomT(size){
     return t;
 }
 
-//签名者发送公钥
+//发送自己的公钥
 let k;
 function getPublicKey() {
     k = random(32);
     R = G.multiply(k);
-    return {Rx:R.affineX.toString(16), Ry:R.affineY.toString(16), Px:P.affineX.toString(16), Py:P.affineY.toString(16)};
+    return {Rx:R.affineX.toString(16), Ry:R.affineY.toString(16), Px:P_self.affineX.toString(16), Py:P_self.affineY.toString(16)};
 }
 
 //签名者签名
 function getSig(cBlinded) {
-    var cBlinded_big = new BigInteger();
+    let cBlinded_big = new BigInteger();
     cBlinded_big.fromString(cBlinded, 16);
-    var sBlind = k.subtract(cBlinded_big.multiply(BigInteger.fromBuffer(privateKey)));
+    let sBlind = k.subtract(cBlinded_big.multiply(BigInteger.fromBuffer(privateKey)));
     //console.log("sBlind", sBlind.toString());
-    var t = generateRandomT(32);    //生成多个，使用for循环即可
+    let t = generateRandomT(32);    //生成多个，使用for循环即可
     sBlind = sBlind.add(t).mod(n);
     return {sBlind: sBlind.toString(16), t: t.toHex(32)};
 }
