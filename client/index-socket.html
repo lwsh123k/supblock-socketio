@@ -17,15 +17,16 @@
 
     <input type="text" id="message" placeholder="请输入消息">
     <button onclick="getSig()">获得签名(盲化信息、签名、去盲)</button>
-    <ul id="messages"></ul>
     <br>
 
     <input type="text" id="c" placeholder="c">
     <input type="text" id="s" placeholder="s">
-    <input type="text" id="t" placeholder="text">
+    <input type="text" id="t" placeholder="t">
     <button onclick="verifySig()">验证签名</button>
-
+    <ul id="messages"></ul>
+    <br>
     <script src="./socket.io.js"></script>
+    <script src="./main.js"></script>
     <script>
         const socket = io("http://localhost:3000");
 
@@ -43,30 +44,62 @@
             addMessage('你向用户 ' + to + ' 请求了公钥');
         }
 
-        //别人请求自己
+        //别人请求自己的公钥
         socket.on('request public key', function(data) {
-            socket.emit('response public key', {from: data.to, to:data.from, a:'aa'})
+            let publicKey = ecc.getPublicKey();
+            let res = {};
+            Object.assign(res, publicKey, {from: data.to, to:data.from});
+            socket.emit('response public key', res);
         });
 
         //收到别人发给自己的公钥
         socket.on('response public key', function(data) {
-            addMessage('收到来自 ' + data.from + ' 的公钥' + data.a);
+            ecc.deconPublicKey(data.Rx, data.Ry, data.Px, data.Py);
+            addMessage('收到来自 ' + data.from + ' 的公钥' + data.Rx);
         });
 
 
 
-
-
+        //////////////////////////////////获取签名部分//////////////////////////////////
         // 请求签名
         function getSig() {
-
+            let from = document.getElementById('username').value;
+            let to = document.getElementById('to').value;
+            let message = document.getElementById('message').value;
+            let cBlinded_c = ecc.blindMessage(message); //返回cBlinded和c
+            let blindMessage = cBlinded_c.cBlinded;
+            socket.emit('request sig', { from: from, to: to, blindMessage:blindMessage});
+            addMessage('你向用户 ' + to + ' 请求了签名');
+            addMessage('c:' + cBlinded_c.c);
         }
-        // 监听 得到签名 事件
-        socket.on('get sig', function(data) {
-            console.log('用户 ' + data.from + ' 发送了私聊消息给 ' + data.to + ': ' + data.message);
-            addMessage(data.from + ' 发送了私聊消息给 ' + data.to + ': ' + data.message);
+        //别人请求自己的签名
+        socket.on('request sig', function(data) {
+            console.log(data.blindMessage);
+            let blindSig = ecc.getSig(data.blindMessage)
+            let res = {};
+            Object.assign(res, blindSig, {from: data.to, to:data.from});
+            socket.emit('response sig', res);
         });
 
+        //收到别人发给自己的签名
+        socket.on('response sig', function(data) {
+            let sig = ecc.unblindSig(data.sBlind);
+            addMessage('收到来自 ' + data.from + ' 的签名s(已去除盲化因子):' + sig.s);
+            addMessage('收到来自 ' + data.from + ' 的随机数t:' + data.t);
+        });
+
+
+        //////////////////////////////验证签名////////////////////////////////////////
+        function verifySig() {
+            let message = document.getElementById('message').value;
+            let c = document.getElementById('c').value;
+            let s = document.getElementById('s').value;
+            let t = document.getElementById('t').value;
+            let result = ecc.verifySig(message, c, s, t).result; 
+            addMessage('结果：' + result);
+        }
+
+        //////////////////////////////其他事件////////////////////////////////////////
         // 监听 对方不在线 事件
         socket.on('not online', function(data) {
             console.log('用户 ' + data.from + ' 发送了私聊消息给 ' + data.to + ': ' + data.message);
@@ -78,16 +111,6 @@
             const username = document.getElementById('username').value;
             if (username) {
                 socket.emit('join', { username: username });
-            }
-        }
-
-        // 发送私聊消息
-        function sendPrivateMessage() {
-            const to = document.getElementById('to').value;
-            const message = document.getElementById('message').value;
-            if (to && message) {
-                socket.emit('private message', { from: socket.id, to: to, message: message });
-                addMessage('你发送了私聊消息给 ' + to + ': ' + message);
             }
         }
 
